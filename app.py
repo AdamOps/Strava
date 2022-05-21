@@ -18,8 +18,6 @@ app.secret_key = 'secret'
 app.config['SESSION_COOKIE_NAME'] = 'StravaVis'
 
 
-
-
 @app.route('/')
 def login():
     strava_oauth = StravaOAUTH(STRAVA_CLIENT_ID,
@@ -60,7 +58,7 @@ def authorize():
 def get_all_activities():
     curr_athlete = client.get_athlete()
     print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname, "\nGender: ", curr_athlete.sex, "\nCity: ",
-          curr_athlete.city)
+          curr_athlete.city, ", ", curr_athlete.country)
     allShoes = curr_athlete.shoes
     print("Number of shoes: ", len(allShoes))
     data = []
@@ -69,26 +67,25 @@ def get_all_activities():
         equipDict = equipment.to_dict()
         newData = [equipDict.get(x) for x in dataColumns]
         data.append(newData)
-        print(newData)
-    currShoes = allShoes[0]
     equipDF = pd.DataFrame(data, columns=dataColumns)
     print(equipDF.head())
 
     activityCols = ['id',
                     'name',
-                    'resource_state',
-                    'start_date_local',
+                    'description',
+                    'athlete_count',
                     'type',
                     'distance',
                     'moving_time',
-                    'elapsed_time',
                     'total_elevation_gain',
                     'elev_high',
                     'elev_low',
                     'average_speed',
                     'max_speed',
                     'gear_id',
-                    'description']
+                    'has_heartrate',
+                    'workout_type',
+                    'calories']
 
     activities = client.get_activities(limit=10)
     print(type(activities))
@@ -98,6 +95,7 @@ def get_all_activities():
         newData = [activityDict.get(x) for x in activityCols]
         activityData.append(newData)
     activityDF = pd.DataFrame(activityData, columns=activityCols)
+    activityDF['distance'] = activityDF['distance']/1000
     print(activityDF.head())
 
     return 'Got the athlete.'
