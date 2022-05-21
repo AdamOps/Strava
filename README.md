@@ -2,7 +2,13 @@
 
 *Purpose*
 - Load athlete data
+  - Name
+  - Gender
+  - City
+  - Amount of equipment
 - Load gear data
+  - All shoes and bikes
+  - Names/distance/description of gear
 - Load activity data
   - Provide summary statistics of activities
     - Length
