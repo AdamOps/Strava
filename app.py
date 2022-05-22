@@ -5,6 +5,7 @@ from flask import Flask, url_for, session, request, redirect
 import pandas as pd
 import stravalib.model
 from os.path import exists
+import os
 import streamlit
 
 client = stravalib.client.Client()
@@ -53,29 +54,7 @@ def authorize():
 
 @app.route('/get_activities')
 def get_all_activities():
-    activitiesAlreadyStored = exists("localStrava.csv")
-
-    activityDF = pd.DataFrame()
-
-    if activitiesAlreadyStored:
-        print("Local data file found.")
-        activityDF = pd.read_csv("localStrava.csv", sep=';', encoding='utf-8')
-        if activityDF.empty:
-            print("Loaded dataframe was empty")
-
-    curr_athlete = client.get_athlete()
-    print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname, "\nGender: ", curr_athlete.sex, "\nCity: ",
-          curr_athlete.city, ", ", curr_athlete.country)
-    allShoes = curr_athlete.shoes
-    print("Number of shoes: ", len(allShoes))
-    data = []
-    dataColumns = ['id', 'name', 'distance', 'primary', 'brand_name', 'model_name', 'description', 'resource_state']
-    for equipment in allShoes:
-        equipDict = equipment.to_dict()
-        newData = [equipDict.get(x) for x in dataColumns]
-        data.append(newData)
-    equipDF = pd.DataFrame(data, columns=dataColumns)
-    print(equipDF.head())
+    localFileComplete = False
 
     activityCols = ['id',
                     'name',
@@ -92,21 +71,60 @@ def get_all_activities():
                     'gear_id',
                     'has_heartrate',
                     'workout_type',
-                    'calories']
+                    'calories',
+                    'start_date']
 
-    if not activitiesAlreadyStored:
-        activities = client.get_activities(limit=25)
-        print(type(activities))
-        activityData = []
-        for activity in activities:
-            activityDict = activity.to_dict()
-            newData = [activityDict.get(x) for x in activityCols]
-            activityData.append(newData)
-        activityDF = pd.DataFrame(activityData, columns=activityCols)
-        activityDF['distance'] = activityDF['distance']/1000
-        activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
-        print("No existing strava file found. Created a new one.")
+    activityDF = pd.DataFrame(columns=activityCols)
 
+
+    curr_athlete = client.get_athlete()
+    # print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname, "\nGender: ", curr_athlete.sex, "\nCity: ",
+    #      curr_athlete.city, ", ", curr_athlete.country)
+    allShoes = curr_athlete.shoes
+
+    data = []
+    dataColumns = ['id', 'name', 'distance', 'primary', 'brand_name', 'model_name', 'description', 'resource_state']
+    for equipment in allShoes:
+        equipDict = equipment.to_dict()
+        newData = [equipDict.get(x) for x in dataColumns]
+        data.append(newData)
+    equipDF = pd.DataFrame(data, columns=dataColumns)
+    print(equipDF.head())
+
+    if exists("localStrava.csv"):
+        print("Local data file found.")
+        activityDF = pd.read_csv("localStrava.csv", sep=';', encoding='utf-8')
+        statsDict = curr_athlete.stats.to_dict()
+        numActivities = statsDict['all_run_totals']['count']
+        print("Total number of runs found: ", numActivities)
+        if numActivities > activityDF.shape[0]:
+            localFileComplete = False
+        else:
+            localFileComplete = True
+        if activityDF.empty:
+            print("Loaded dataframe was empty")
+    latestActivity = ""
+    if exists("localStrava.csv"):
+        latestActivity = activityDF.loc[activityDF.shape[0]-1, 'start_date'].rstrip("+00:00") + "Z"
+        if len(latestActivity) != 20:
+            print("You messed up the spreadsheet. Re-importing all data.")
+            latestActivity = "2010-01-01T00:00:00Z"
+            os.remove("localStrava.csv")
+    else:
+        latestActivity = "2010-01-01T00:00:00Z"
+    print("Retrieving activities since: ", latestActivity)
+    activities = client.get_activities(after=latestActivity, limit=50)
+    activityData = []
+    for activity in activities:
+        activityDict = activity.to_dict()
+        newData = [activityDict.get(x) for x in activityCols]
+        activityData.append(newData)
+    latestDF = pd.DataFrame(activityData, columns=activityCols)
+    activityDF = pd.concat([activityDF, latestDF], axis=0)
+    activityDF['distance'] = activityDF['distance'] / 1000
+    activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
+
+    print(activityDF.head())
     return 'Got the athlete and retrieved the activities.'
 
 
