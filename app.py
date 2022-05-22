@@ -2,18 +2,16 @@ import datetime
 
 import stravalib
 from flask import Flask, url_for, session, request, redirect
-import json
-import time
 import pandas as pd
 import numpy as np
 import stravalib.model
-import requests
-import jsonlines
+from os.path import exists
+import streamlit
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
 
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
 app.secret_key = 'secret'
 app.config['SESSION_COOKIE_NAME'] = 'StravaVis'
 
@@ -56,6 +54,16 @@ def authorize():
 
 @app.route('/get_activities')
 def get_all_activities():
+    activitiesAlreadyStored = exists("localStrava.csv")
+
+    activityDF = pd.DataFrame()
+
+    if activitiesAlreadyStored:
+        print("Local data file found.")
+        activityDF = pd.read_csv("localStrava.csv", sep=';', encoding='utf-8')
+        if activityDF.empty:
+            print("Loaded dataframe was empty")
+
     curr_athlete = client.get_athlete()
     print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname, "\nGender: ", curr_athlete.sex, "\nCity: ",
           curr_athlete.city, ", ", curr_athlete.country)
@@ -87,18 +95,20 @@ def get_all_activities():
                     'workout_type',
                     'calories']
 
-    activities = client.get_activities(limit=10)
-    print(type(activities))
-    activityData = []
-    for activity in activities:
-        activityDict = activity.to_dict()
-        newData = [activityDict.get(x) for x in activityCols]
-        activityData.append(newData)
-    activityDF = pd.DataFrame(activityData, columns=activityCols)
-    activityDF['distance'] = activityDF['distance']/1000
-    print(activityDF.head())
+    if not activitiesAlreadyStored:
+        activities = client.get_activities(limit=25)
+        print(type(activities))
+        activityData = []
+        for activity in activities:
+            activityDict = activity.to_dict()
+            newData = [activityDict.get(x) for x in activityCols]
+            activityData.append(newData)
+        activityDF = pd.DataFrame(activityData, columns=activityCols)
+        activityDF['distance'] = activityDF['distance']/1000
+        activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
+        print("No existing strava file found. Created a new one.")
 
-    return 'Got the athlete.'
+    return 'Got the athlete and retrieved the activities.'
 
 
 class StravaOAUTH:
