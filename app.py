@@ -3,7 +3,6 @@ import datetime
 import stravalib
 from flask import Flask, url_for, session, request, redirect
 import pandas as pd
-import numpy as np
 import stravalib.model
 from os.path import exists
 import streamlit
