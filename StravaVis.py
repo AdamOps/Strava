@@ -9,7 +9,9 @@ import classesStravaVis
 import streamlit
 
 client = stravalib.client.Client()
-STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
+STRAVA_CLIENT_ID = streamlit.secrets["id"]
+STRAVA_SECRET = streamlit.secrets["secret"]
+STRAVA_REFRESH = streamlit.secrets["refresh"]
 
 strava_oauth = classesStravaVis.StravaOAUTH(STRAVA_CLIENT_ID,
                             STRAVA_SECRET,
