@@ -1,20 +1,19 @@
 import datetime
 
 import stravalib
-from flask import Flask, url_for, session, request, redirect
 import pandas as pd
-import numpy as np
+from flask import request, session
 import stravalib.model
 from os.path import exists
-import streamlit
 import classesStravaVis
+import streamlit
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
 
 strava_oauth = classesStravaVis.StravaOAUTH(STRAVA_CLIENT_ID,
                             STRAVA_SECRET,
-                            'http://localhost:5000/',
+                            'http://localhost:8051/',
                             ['read_all', 'profile:read_all', 'activity:read_all'])
 
 authorize_url = client.authorization_url(client_id=STRAVA_CLIENT_ID,
@@ -84,3 +83,4 @@ if not activitiesAlreadyStored:
     activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
     print("No existing strava file found. Created a new one.")
 
+streamlit.table(activityDF)
