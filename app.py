@@ -7,6 +7,9 @@ import stravalib.model
 from os.path import exists
 import os
 import streamlit
+import folium
+import webbrowser
+import classesStravaVis
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
@@ -72,7 +75,13 @@ def get_all_activities():
                     'has_heartrate',
                     'workout_type',
                     'calories',
-                    'start_date']
+                    'start_date',
+                    "segment_efforts",
+                    "gear",
+                    "map",
+                    'start_latitude',
+                    'start_longitude'
+                    ]
 
     activityDF = pd.DataFrame(columns=activityCols)
 
@@ -95,12 +104,8 @@ def get_all_activities():
         print("Local data file found.")
         activityDF = pd.read_csv("localStrava.csv", sep=';', encoding='utf-8')
         statsDict = curr_athlete.stats.to_dict()
-        numActivities = statsDict['all_run_totals']['count']
-        print("Total number of runs found: ", numActivities)
-        if numActivities > activityDF.shape[0]:
-            localFileComplete = False
-        else:
-            localFileComplete = True
+        numRuns = statsDict['all_run_totals']['count']
+        print("Total number of runs found: ", numRuns)
         if activityDF.empty:
             print("Loaded dataframe was empty")
     latestActivity = ""
@@ -125,6 +130,25 @@ def get_all_activities():
     activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
 
     print(activityDF.head())
+
+    activity_number = 0
+
+    types = ['time', 'distance', 'latlng', 'altitude', 'velocity_smooth', 'moving', 'grade_smooth']
+    activity_data = client.get_activity_streams(activityDF['id'][activity_number], types=types)
+
+
+    print(activity_data['distance'])
+
+
+    # activityMap = folium.Map(location=[activityDF['start_latitude'][activity_number], activityDF['start_longitude'][activity_number]],
+    #                  zoom_start=14,
+    #                  width='100%'
+    #                  )
+    #
+    # folium.PolyLine(activity_data['latlng'].data).add_to(map)
+    # activityMap.save(r'c:\temp\example.html')
+    # webbrowser.open(r'c:\temp\example.html')
+
     return 'Got the athlete and retrieved the activities.'
 
 

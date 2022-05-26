@@ -2,3 +2,5 @@ git+https://github.com/hozn/stravalib
 git+https://github.com/pallets/flask
 pandas
 streamlit
+folium
+webbrowser
