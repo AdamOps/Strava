@@ -6,10 +6,14 @@ import pandas as pd
 import stravalib.model
 from os.path import exists
 import os
+import ast
 import streamlit
 import folium
 import webbrowser
-import classesStravaVis
+import polyline
+
+## Parameters
+numToRetrieve = 5
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
@@ -79,8 +83,8 @@ def get_all_activities():
                     "segment_efforts",
                     "gear",
                     "map",
-                    'start_latitude',
-                    'start_longitude'
+                    'start_latlng',
+                    'end_latlng'
                     ]
 
     activityDF = pd.DataFrame(columns=activityCols)
@@ -91,14 +95,14 @@ def get_all_activities():
     #      curr_athlete.city, ", ", curr_athlete.country)
     allShoes = curr_athlete.shoes
 
-    data = []
-    dataColumns = ['id', 'name', 'distance', 'primary', 'brand_name', 'model_name', 'description', 'resource_state']
-    for equipment in allShoes:
-        equipDict = equipment.to_dict()
-        newData = [equipDict.get(x) for x in dataColumns]
-        data.append(newData)
-    equipDF = pd.DataFrame(data, columns=dataColumns)
-    print(equipDF.head())
+    # data = []
+    # dataColumns = ['id', 'name', 'distance', 'primary', 'brand_name', 'model_name', 'description', 'resource_state']
+    # for equipment in allShoes:
+    #     equipDict = equipment.to_dict()
+    #     newData = [equipDict.get(x) for x in dataColumns]
+    #     data.append(newData)
+    # equipDF = pd.DataFrame(data, columns=dataColumns)
+    # print(equipDF.head())
 
     if exists("localStrava.csv"):
         print("Local data file found.")
@@ -111,43 +115,43 @@ def get_all_activities():
     latestActivity = ""
     if exists("localStrava.csv"):
         latestActivity = activityDF.loc[activityDF.shape[0]-1, 'start_date'].rstrip("+00:00") + "Z"
-        if len(latestActivity) != 20:
+        if len(latestActivity) != 20 and activityDF.columns == activityCols:
             print("You messed up the spreadsheet. Re-importing all data.")
             latestActivity = "2010-01-01T00:00:00Z"
             os.remove("localStrava.csv")
     else:
         latestActivity = "2010-01-01T00:00:00Z"
-    print("Retrieving activities since: ", latestActivity)
-    activities = client.get_activities(after=latestActivity, limit=50)
-    activityData = []
-    for activity in activities:
-        activityDict = activity.to_dict()
-        newData = [activityDict.get(x) for x in activityCols]
-        activityData.append(newData)
-    latestDF = pd.DataFrame(activityData, columns=activityCols)
-    activityDF = pd.concat([activityDF, latestDF], axis=0)
-    activityDF['distance'] = activityDF['distance'] / 1000
-    activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
 
-    print(activityDF.head())
+    if activityDF.shape[0] < numToRetrieve:
+        print("Retrieving activities since: ", latestActivity)
+        activities = client.get_activities(after=latestActivity, limit=5)
+        activityData = []
+        for activity in activities:
+            activityDict = activity.to_dict()
+            newData = [activityDict.get(x) for x in activityCols]
+            activityData.append(newData)
+        latestDF = pd.DataFrame(activityData, columns=activityCols)
+        activityDF = pd.concat([activityDF, latestDF], axis=0)
+        activityDF['distance'] = activityDF['distance'] / 1000
+        activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
 
-    activity_number = 0
+    # print(activityDF.head())
+    # print(activityDF['id'][0])
 
-    types = ['time', 'distance', 'latlng', 'altitude', 'velocity_smooth', 'moving', 'grade_smooth']
-    activity_data = client.get_activity_streams(activityDF['id'][activity_number], types=types)
+    # DUPA = client.get_activity_streams(898909762, types=['distance', 'time', 'latlng', 'altitude'], resolution='medium')
 
+    start_latlng = ast.literal_eval(activityDF['start_latlng'][0])
+    end_latlng = ast.literal_eval(activityDF['end_latlng'][0])
+    print("Start lat: ", start_latlng[0], ", start long: ", start_latlng[1])
 
-    print(activity_data['distance'])
+    mapDict = ast.literal_eval(activityDF['map'][0])
+    newPolyLine = polyline.decode(mapDict['summary_polyline'])
 
+    activityMap = folium.Map(location=[start_latlng[0], start_latlng[1]], zoom_start=14, width='100%')
 
-    # activityMap = folium.Map(location=[activityDF['start_latitude'][activity_number], activityDF['start_longitude'][activity_number]],
-    #                  zoom_start=14,
-    #                  width='100%'
-    #                  )
-    #
-    # folium.PolyLine(activity_data['latlng'].data).add_to(map)
-    # activityMap.save(r'c:\temp\example.html')
-    # webbrowser.open(r'c:\temp\example.html')
+    folium.PolyLine(newPolyLine).add_to(activityMap)
+    activityMap.save(r'c:\temp\example.html')
+    webbrowser.open(r'c:\temp\example.html')
 
     return 'Got the athlete and retrieved the activities.'
 
