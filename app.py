@@ -12,7 +12,7 @@ import folium
 import webbrowser
 import polyline
 
-## Parameters
+# Parameters
 numToRetrieve = 5
 
 client = stravalib.client.Client()
@@ -89,7 +89,6 @@ def get_all_activities():
 
     activityDF = pd.DataFrame(columns=activityCols)
 
-
     curr_athlete = client.get_athlete()
     # print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname, "\nGender: ", curr_athlete.sex, "\nCity: ",
     #      curr_athlete.city, ", ", curr_athlete.country)
@@ -135,25 +134,61 @@ def get_all_activities():
         activityDF['distance'] = activityDF['distance'] / 1000
         activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
 
-    # print(activityDF.head())
-    # print(activityDF['id'][0])
+    typeList = ['distance', 'time', 'latlng', 'altitude']
 
-    # DUPA = client.get_activity_streams(898909762, types=['distance', 'time', 'latlng', 'altitude'], resolution='medium')
+    counter = 0
+    polyLineList = []
+    for x in activityDF['id']:
+        counter += 1
+        print("Making the map for activity # %d" % counter)
+        activityStream = getStream(typeList, x)
+        streamDF = storeStream(typeList, activityStream)
+        streamPoly = makePolyLine(streamDF)
+        polyLineList.append(streamPoly)
 
-    start_latlng = ast.literal_eval(activityDF['start_latlng'][0])
-    end_latlng = ast.literal_eval(activityDF['end_latlng'][0])
-    print("Start lat: ", start_latlng[0], ", start long: ", start_latlng[1])
+    plotMap(polyLineList, 0)
 
-    mapDict = ast.literal_eval(activityDF['map'][0])
-    newPolyLine = polyline.decode(mapDict['summary_polyline'])
+    return 'All done!'
 
-    activityMap = folium.Map(location=[start_latlng[0], start_latlng[1]], zoom_start=14, width='100%')
 
-    folium.PolyLine(newPolyLine).add_to(activityMap)
-    activityMap.save(r'c:\temp\example.html')
-    webbrowser.open(r'c:\temp\example.html')
+def getStream(typeList, activityID):
+    activityStream = client.get_activity_streams(activityID, types=typeList, resolution='medium', series_type='distance')
+    return activityStream
 
-    return 'Got the athlete and retrieved the activities.'
+
+def storeStream(typeList, activityStream):
+    df = pd.DataFrame()
+    # Write each row to a dataframe
+    for item in typeList:
+        if item in activityStream.keys():
+            df[item] = pd.Series(activityStream[item].data, index=None)
+    return df
+
+
+def makePolyLine(df):
+    latLongList = []
+    for x in df['latlng']:
+        latLongList.append(tuple(x))
+    return latLongList
+
+    # Summary polyline. Polylines are lists of tuples, storing coordinates.
+    # mapDict = ast.literal_eval(activityDF['map'][0])
+    # newPolyLine = polyline.decode(mapDict['summary_polyline'])
+
+
+def plotMap(activityPolyLine, num):
+    if len(activityPolyLine) == 1:
+        activityMap = folium.Map(location=[activityPolyLine[0][0][0], activityPolyLine[0][0][1]], zoom_start=14, width='100%')
+        folium.PolyLine(activityPolyLine).add_to(activityMap)
+        activityMap.save(r'example' + str(num) + '.html')
+        webbrowser.open(r'example' + str(num) + '.html')
+    else:
+        activityMap = folium.Map(location=[activityPolyLine[0][0][0], activityPolyLine[0][0][1]], zoom_start=14, width='100%')
+        for poly in activityPolyLine:
+            folium.PolyLine(poly).add_to(activityMap)
+        activityMap.save(r'example' + str(num) + '.html')
+        webbrowser.open(r'example' + str(num) + '.html')
+    return
 
 
 class StravaOAUTH:
