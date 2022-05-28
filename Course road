@@ -1,0 +1,13 @@
+1. Get the code to run on Google App Engine
+2. Create basic front-end
+    - With streamlit?
+    - Main objective is to have a customisable dashboard
+    - Template version is fine. Tweaking will happen depending on features.
+    - Basic feature should be to open runs on a map, see some basic stats of it, and have the ability to go back to Home
+3. Figure out a way to store data, so that it doesn't have to be fetched anew every time.
+    - Update feature like on PBViewer is good.
+    - Local version with a CSV is working fine
+        - Could probably just make a CSV based on the athlete name, and load that!
+4. Let the user label the runs (easy/intervals/tempo/group run/race)
+5. Add feature to correct micro-data
+    - Huge list of coordinates; could easily adjust the element in the list, to fix outliers.

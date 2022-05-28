@@ -1,5 +1,3 @@
-import datetime
-
 import stravalib
 from flask import Flask, url_for, session, request, redirect
 import pandas as pd
@@ -10,10 +8,10 @@ import ast
 import streamlit
 import folium
 import webbrowser
-import polyline
+import random
 
 # Parameters
-numToRetrieve = 5
+numToRetrieve = 10
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
@@ -90,7 +88,8 @@ def get_all_activities():
     activityDF = pd.DataFrame(columns=activityCols)
 
     curr_athlete = client.get_athlete()
-    # print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname, "\nGender: ", curr_athlete.sex, "\nCity: ",
+    # print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname,
+    #      "\nGender: ", curr_athlete.sex, "\nCity: ",
     #      curr_athlete.city, ", ", curr_athlete.country)
     allShoes = curr_athlete.shoes
 
@@ -134,6 +133,9 @@ def get_all_activities():
         activityDF['distance'] = activityDF['distance'] / 1000
         activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
 
+
+
+
     typeList = ['distance', 'time', 'latlng', 'altitude']
 
     counter = 0
@@ -171,10 +173,6 @@ def makePolyLine(df):
         latLongList.append(tuple(x))
     return latLongList
 
-    # Summary polyline. Polylines are lists of tuples, storing coordinates.
-    # mapDict = ast.literal_eval(activityDF['map'][0])
-    # newPolyLine = polyline.decode(mapDict['summary_polyline'])
-
 
 def plotMap(activityPolyLine, num):
     if len(activityPolyLine) == 1:
@@ -184,8 +182,14 @@ def plotMap(activityPolyLine, num):
         webbrowser.open(r'example' + str(num) + '.html')
     else:
         activityMap = folium.Map(location=[activityPolyLine[0][0][0], activityPolyLine[0][0][1]], zoom_start=14, width='100%')
+        baseColor = "#FF0000"
+        counter = 1
         for poly in activityPolyLine:
-            folium.PolyLine(poly).add_to(activityMap)
+            folium.PolyLine(poly, color=baseColor).add_to(folium.FeatureGroup(name="Run #" + str(counter)).add_to(activityMap))
+            baseColor = "#" + "%06x" % random.randint(0, 0x888888)
+            counter += 1
+
+        folium.LayerControl(collapsed=False).add_to(activityMap)
         activityMap.save(r'example' + str(num) + '.html')
         webbrowser.open(r'example' + str(num) + '.html')
     return
