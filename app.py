@@ -177,9 +177,12 @@ def makePolyLine(df):
 
 def plotMap(activityPolyLine, num, distanceList):
     activityMap = folium.Map(location=[activityPolyLine[0][0][0], activityPolyLine[0][0][1]], zoom_start=14,
-                             width='100%')
+                             width='100%', tiles='Stamen Terrain')
     folium.TileLayer('cartodbpositron').add_to(activityMap)
     folium.TileLayer('cartodbdark_matter').add_to(activityMap)
+    folium.TileLayer('Stamen Toner').add_to(activityMap)
+
+
     if len(activityPolyLine) == 1:
         folium.PolyLine(activityPolyLine).add_to(activityMap)
         activityMap.save(r'example' + str(num) + '.html')
