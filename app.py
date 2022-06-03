@@ -4,6 +4,7 @@ import pandas as pd
 import stravalib.model
 from os.path import exists
 import os
+import Functions as fun
 import ast
 import folium
 import webbrowser
@@ -132,9 +133,6 @@ def get_all_activities():
         activityDF['distance'] = activityDF['distance'] / 1000
         activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
 
-
-
-
     typeList = ['distance', 'time', 'latlng', 'altitude']
 
     counter = 0
@@ -143,62 +141,15 @@ def get_all_activities():
     for x in activityDF['id']:
         counter += 1
         print("Making the map for activity # %d" % counter)
-        activityStream = getStream(typeList, x)
-        streamDF = storeStream(typeList, activityStream)
-        streamPoly = makePolyLine(streamDF)
+        activityStream = fun.getStream(client, typeList, x)
+        streamDF = fun.storeStream(typeList, activityStream)
+        streamPoly = fun.makePolyLine(streamDF)
         polyLineList.append(streamPoly)
         distanceList.append(activityDF.loc[counter-1, 'distance'])
 
-    plotMap(polyLineList, 0, distanceList)
+    fun.plotMap(polyLineList, 0, distanceList)
 
     return 'All done!'
-
-
-def getStream(typeList, activityID):
-    activityStream = client.get_activity_streams(activityID, types=typeList, resolution='medium', series_type='distance')
-    return activityStream
-
-
-def storeStream(typeList, activityStream):
-    df = pd.DataFrame()
-    # Write each row to a dataframe
-    for item in typeList:
-        if item in activityStream.keys():
-            df[item] = pd.Series(activityStream[item].data, index=None)
-    return df
-
-
-def makePolyLine(df):
-    latLongList = []
-    for x in df['latlng']:
-        latLongList.append(tuple(x))
-    return latLongList
-
-
-def plotMap(activityPolyLine, num, distanceList):
-    activityMap = folium.Map(location=[activityPolyLine[0][0][0], activityPolyLine[0][0][1]], zoom_start=14,
-                             width='100%', tiles='Stamen Terrain')
-    folium.TileLayer('cartodbpositron').add_to(activityMap)
-    folium.TileLayer('cartodbdark_matter').add_to(activityMap)
-    folium.TileLayer('Stamen Toner').add_to(activityMap)
-
-
-    if len(activityPolyLine) == 1:
-        folium.PolyLine(activityPolyLine).add_to(activityMap)
-        activityMap.save(r'example' + str(num) + '.html')
-        webbrowser.open(r'example' + str(num) + '.html')
-    else:
-        baseColor = "#FF0000"
-        counter = 1
-        for poly in activityPolyLine:
-            folium.PolyLine(poly, color=baseColor).add_to(folium.FeatureGroup(name="Run #" + str(counter) + ", Distance: " + str(distanceList[counter-1])).add_to(activityMap))
-            baseColor = "#" + "%06x" % random.randint(0, 0x888888)
-            counter += 1
-
-        folium.LayerControl(collapsed=False).add_to(activityMap)
-        activityMap.save(r'example' + str(num) + '.html')
-        webbrowser.open(r'example' + str(num) + '.html')
-    return
 
 
 class StravaOAUTH:
