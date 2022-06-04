@@ -9,12 +9,17 @@ import ast
 import folium
 import webbrowser
 import random
+import pathlib
 
 # Parameters
 numToRetrieve = 10
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
+
+print(STRAVA_CLIENT_ID)
+print(STRAVA_SECRET)
+print(STRAVA_REFRESH)
 
 app = Flask(__name__, instance_relative_config=True)
 app.secret_key = 'secret'
@@ -102,21 +107,23 @@ def get_all_activities():
     # equipDF = pd.DataFrame(data, columns=dataColumns)
     # print(equipDF.head())
 
-    if exists("localStrava.csv"):
+    csvPath = pathlib.Path(__file__).parent / "/data/localStrava.csv"
+
+    if exists(csvPath):
         print("Local data file found.")
-        activityDF = pd.read_csv("localStrava.csv", sep=';', encoding='utf-8')
+        activityDF = pd.read_csv(csvPath, sep=';', encoding='utf-8')
         statsDict = curr_athlete.stats.to_dict()
         numRuns = statsDict['all_run_totals']['count']
         print("Total number of runs found: ", numRuns)
         if activityDF.empty:
             print("Loaded dataframe was empty")
     latestActivity = ""
-    if exists("localStrava.csv"):
+    if exists(csvPath):
         latestActivity = activityDF.loc[activityDF.shape[0]-1, 'start_date'].rstrip("+00:00") + "Z"
         if len(latestActivity) != 20 and activityDF.columns == activityCols:
             print("You messed up the spreadsheet. Re-importing all data.")
             latestActivity = "2010-01-01T00:00:00Z"
-            os.remove("localStrava.csv")
+            os.remove(csvPath)
     else:
         latestActivity = "2010-01-01T00:00:00Z"
 
@@ -131,7 +138,7 @@ def get_all_activities():
         latestDF = pd.DataFrame(activityData, columns=activityCols)
         activityDF = pd.concat([activityDF, latestDF], axis=0)
         activityDF['distance'] = activityDF['distance'] / 1000
-        activityDF.to_csv("localStrava.csv", sep=';', encoding='utf-8')
+        activityDF.to_csv(csvPath, sep=';', encoding='utf-8')
 
     typeList = ['distance', 'time', 'latlng', 'altitude']
 
@@ -148,6 +155,8 @@ def get_all_activities():
         distanceList.append(activityDF.loc[counter-1, 'distance'])
 
     fun.plotMap(polyLineList, 0, distanceList)
+    indexPath = pathlib.Path(__file__).parent / "/templates/index.html"
+    webbrowser.get('firefix').open(str(indexPath), new=2)
 
     return 'All done!'
 

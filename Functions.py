@@ -47,5 +47,5 @@ def plotMap(activityPolyLine, num, distanceList):
 
         folium.LayerControl(collapsed=False).add_to(activityMap)
         activityMap.save(r'example' + str(num) + '.html')
-        webbrowser.open(r'example' + str(num) + '.html')
+        # webbrowser.open(r'example' + str(num) + '.html')
     return
