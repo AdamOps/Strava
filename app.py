@@ -1,25 +1,18 @@
 import stravalib
-from flask import Flask, url_for, session, request, redirect
+from flask import Flask, url_for, session, request, redirect, render_template
 import pandas as pd
 import stravalib.model
 from os.path import exists
 import os
 import Functions as fun
-import ast
-import folium
-import webbrowser
-import random
 import pathlib
+import json
 
 # Parameters
 numToRetrieve = 10
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
-
-print(STRAVA_CLIENT_ID)
-print(STRAVA_SECRET)
-print(STRAVA_REFRESH)
 
 app = Flask(__name__, instance_relative_config=True)
 app.secret_key = 'secret'
@@ -62,7 +55,7 @@ def authorize():
     return redirect(url_for('get_all_activities'))
 
 
-@app.route('/get_activities')
+@app.route('/index')
 def get_all_activities():
     localFileComplete = False
 
@@ -142,6 +135,8 @@ def get_all_activities():
 
     typeList = ['distance', 'time', 'latlng', 'altitude']
 
+    activityDF = activityDF.loc[:, ~activityDF.columns.str.contains('^Unnamed')]
+
     counter = 0
     polyLineList = []
     distanceList = []
@@ -156,9 +151,10 @@ def get_all_activities():
 
     fun.plotMap(polyLineList, 0, distanceList)
     indexPath = pathlib.Path(__file__).parent / "/templates/index.html"
-    webbrowser.get('firefix').open(str(indexPath), new=2)
 
-    return 'All done!'
+    activityJSON = activityDF.to_json(orient='columns')
+
+    return render_template('index.html', acvitityData=activityJSON)
 
 
 class StravaOAUTH:

@@ -24,13 +24,18 @@
 <!-- Main central content column -->
   <div class="column middle">
     <h2>Main Content</h2>
-    <iframe src="../example0.html" width="90%" height="800"></iframe>
+    <iframe src="./example0.html" width="90%" height="800"></iframe>
   </div>
 
 <!-- Right content column -->
   <div class="column side">
     <h2>Side</h2>
     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit..</p>
+    {% for activity in activityData  %}
+    <p>
+      {{ activity.name }}
+    </p>
+    {% endfor %}
   </div>
 </div>
 </body>

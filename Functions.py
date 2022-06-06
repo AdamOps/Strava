@@ -3,6 +3,7 @@ import pandas as pd
 import folium
 import webbrowser
 import random
+import pathlib
 
 
 def getStream(client, typeList, activityID):
@@ -32,20 +33,24 @@ def plotMap(activityPolyLine, num, distanceList):
     folium.TileLayer('cartodbpositron').add_to(activityMap)
     folium.TileLayer('cartodbdark_matter').add_to(activityMap)
     folium.TileLayer('Stamen Toner').add_to(activityMap)
+    basePath = pathlib.Path(__file__).parent
 
     if len(activityPolyLine) == 1:
         folium.PolyLine(activityPolyLine).add_to(activityMap)
-        activityMap.save(r'example' + str(num) + '.html')
-        webbrowser.open(r'example' + str(num) + '.html')
+        mapPath = str(basePath) + "/templates/example" + str(num) + ".html"
+        activityMap.save(mapPath)
     else:
         baseColor = "#FF0000"
         counter = 1
         for poly in activityPolyLine:
-            folium.PolyLine(poly, color=baseColor).add_to(folium.FeatureGroup(name="Run #" + str(counter) + ", Distance: " + str(distanceList[counter-1])).add_to(activityMap))
+            # folium.PolyLine(poly, color=baseColor).add_to(folium.FeatureGroup(name="Run #" + str(counter) + ", Distance: " + str(distanceList[counter-1])).add_to(activityMap))
+            folium.PolyLine(poly, color=baseColor).add_to(activityMap)
             baseColor = "#" + "%06x" % random.randint(0, 0x888888)
             counter += 1
 
         folium.LayerControl(collapsed=False).add_to(activityMap)
-        activityMap.save(r'example' + str(num) + '.html')
-        # webbrowser.open(r'example' + str(num) + '.html')
+
+        mapPath = str(basePath) + "/templates/example" + str(num) + ".html"
+        activityMap.save(mapPath)
+        # activityMap.save(r'../templates/example' + str(num) + '.html')
     return
