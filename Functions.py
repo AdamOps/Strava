@@ -53,4 +53,4 @@ def plotMap(activityPolyLine, num, distanceList):
         mapPath = str(basePath) + "/templates/example" + str(num) + ".html"
         activityMap.save(mapPath)
         # activityMap.save(r'../templates/example' + str(num) + '.html')
-    return
+    return activityMap

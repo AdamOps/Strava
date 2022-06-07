@@ -1,5 +1,5 @@
 import stravalib
-from flask import Flask, url_for, session, request, redirect, render_template
+from flask import Flask, url_for, session, request, redirect, render_template, send_file
 import pandas as pd
 import stravalib.model
 from os.path import exists
@@ -149,12 +149,17 @@ def get_all_activities():
         polyLineList.append(streamPoly)
         distanceList.append(activityDF.loc[counter-1, 'distance'])
 
-    fun.plotMap(polyLineList, 0, distanceList)
+    activityMap = fun.plotMap(polyLineList, 0, distanceList)
     indexPath = pathlib.Path(__file__).parent / "/templates/index.html"
 
     activityJSON = activityDF.to_json(orient='columns')
 
     return render_template('index.html', acvitityData=activityJSON)
+
+
+@app.route('/example0.html')
+def show_map():
+    return send_file('./templates/example0.html')
 
 
 class StravaOAUTH:
