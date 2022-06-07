@@ -31,11 +31,13 @@
   <div class="column side">
     <h2>Side</h2>
     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit..</p>
-    {% for activity in activityData  %}
+    {{ activityData }}
+    {% for activity in testData  %}
     <p>
-      {{ activity.name }}
+      {{ activity }}
     </p>
     {% endfor %}
+
   </div>
 </div>
 </body>

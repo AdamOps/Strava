@@ -9,7 +9,7 @@ import pathlib
 import json
 
 # Parameters
-numToRetrieve = 10
+numToRetrieve = 3
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
@@ -110,7 +110,6 @@ def get_all_activities():
         print("Total number of runs found: ", numRuns)
         if activityDF.empty:
             print("Loaded dataframe was empty")
-    latestActivity = ""
     if exists(csvPath):
         latestActivity = activityDF.loc[activityDF.shape[0]-1, 'start_date'].rstrip("+00:00") + "Z"
         if len(latestActivity) != 20 and activityDF.columns == activityCols:
@@ -122,7 +121,7 @@ def get_all_activities():
 
     if activityDF.shape[0] < numToRetrieve:
         print("Retrieving activities since: ", latestActivity)
-        activities = client.get_activities(after=latestActivity, limit=5)
+        activities = client.get_activities(after=latestActivity, limit=numToRetrieve)
         activityData = []
         for activity in activities:
             activityDict = activity.to_dict()
@@ -152,9 +151,16 @@ def get_all_activities():
     activityMap = fun.plotMap(polyLineList, 0, distanceList)
     indexPath = pathlib.Path(__file__).parent / "/templates/index.html"
 
-    activityJSON = activityDF.to_json(orient='columns')
+    activityDict = activityDF.to_dict('dict')
+    activityList = []
+    for x in activityDict['name']:
+        activityList.append(x)
 
-    return render_template('index.html', acvitityData=activityJSON)
+    print(activityList)
+
+    testList = ['One', 'Two', 'Three']
+
+    return render_template('index.html', acvitityData=activityDict, testData=testList)
 
 
 @app.route('/example0.html')
