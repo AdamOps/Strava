@@ -17,24 +17,22 @@
 <!-- Left content column -->
 <div class="row">
   <div class="column side">
-    <h2>Side</h2>
+    <h2>More stuff incoming</h2>
     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit..</p>
   </div>
 
 <!-- Main central content column -->
   <div class="column middle">
-    <h2>Main Content</h2>
+    <h2>Map of activities</h2>
     <iframe src="{{ url_for('show_map') }}" width="90%" height="800"></iframe>
   </div>
 
 <!-- Right content column -->
   <div class="column side">
-    <h2>Side</h2>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit..</p>
-    {{ activityData }}
-    {% for activity in testData  %}
+    <h2>Activities</h2>
+    {% for activity in activityData.items()  %}
     <p>
-      {{ activity }}
+      <b><a href="#">{{ activity[1]['name'] }}</a></b>
     </p>
     {% endfor %}
 

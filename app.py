@@ -9,7 +9,7 @@ import pathlib
 import json
 
 # Parameters
-numToRetrieve = 3
+numToRetrieve = 20
 
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
@@ -144,23 +144,18 @@ def get_all_activities():
         print("Making the map for activity # %d" % counter)
         activityStream = fun.getStream(client, typeList, x)
         streamDF = fun.storeStream(typeList, activityStream)
-        streamPoly = fun.makePolyLine(streamDF)
-        polyLineList.append(streamPoly)
-        distanceList.append(activityDF.loc[counter-1, 'distance'])
+        if streamDF.shape[0] != 0:
+            streamPoly = fun.makePolyLine(streamDF)
+            polyLineList.append(streamPoly)
+            distanceList.append(activityDF.loc[counter-1, 'distance'])
 
     activityMap = fun.plotMap(polyLineList, 0, distanceList)
     indexPath = pathlib.Path(__file__).parent / "/templates/index.html"
 
-    activityDict = activityDF.to_dict('dict')
-    activityList = []
-    for x in activityDict['name']:
-        activityList.append(x)
+    activityJSON = activityDF.to_json(orient='index')
+    parsed = json.loads(activityJSON)
 
-    print(activityList)
-
-    testList = ['One', 'Two', 'Three']
-
-    return render_template('index.html', acvitityData=activityDict, testData=testList)
+    return render_template('index.html', activityData=parsed)
 
 
 @app.route('/example0.html')

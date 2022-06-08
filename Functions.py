@@ -14,9 +14,10 @@ def getStream(client, typeList, activityID):
 def storeStream(typeList, activityStream):
     df = pd.DataFrame()
     # Write each row to a dataframe
-    for item in typeList:
-        if item in activityStream.keys():
-            df[item] = pd.Series(activityStream[item].data, index=None)
+    if activityStream is not None:
+        for item in typeList:
+            if item in activityStream.keys():
+                df[item] = pd.Series(activityStream[item].data, index=None)
     return df
 
 
