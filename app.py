@@ -14,11 +14,13 @@ numToRetrieve = 20
 client = stravalib.client.Client()
 STRAVA_CLIENT_ID, STRAVA_SECRET, STRAVA_REFRESH = open('client.secret').read().strip().split(',')
 
+# Instantiate app
 app = Flask(__name__, instance_relative_config=True)
 app.secret_key = 'secret'
 app.config['SESSION_COOKIE_NAME'] = 'StravaVis'
 
 
+# Home page is the OAUTH2 page.
 @app.route('/')
 def login():
     strava_oauth = StravaOAUTH(STRAVA_CLIENT_ID,
@@ -35,12 +37,14 @@ def login():
     return redirect(authorize_url)
 
 
+# Doesn't really serve a purpose anymore, I suppose.
 @app.route('/redirected')
 def redirect_page():
     print("Redirect successful.")
     return redirect(url_for('authorize'))
 
 
+# Saves all the authorisation tokens (access, refresh and expiry time)
 @app.route('/authorize')
 def authorize():
     authorization_code = request.args.get('code')
@@ -55,6 +59,15 @@ def authorize():
     return redirect(url_for('get_all_activities'))
 
 
+# Main lump of code
+# 1. Fetches the athlete and basic athlete data
+# 2. Checks whether there is already a local file with activity data.
+#   - If so, it loads it.
+#   - If something's wrong with that data, it remakes it from scratch.
+# 3. Once the data have been loaded, it fetches the activity streams.
+#   - This should just be done with the activity load right away, and stored in the same DF rather than fetching it again..
+# 4. The activity streams include data on polylines, which are used to make the activity map.
+#
 @app.route('/index')
 def get_all_activities():
     localFileComplete = False
@@ -82,15 +95,18 @@ def get_all_activities():
                     'start_latlng',
                     'end_latlng'
                     ]
-
+# Create an empty dataframe to store all activity data in later on.
     activityDF = pd.DataFrame(columns=activityCols)
 
+# Fetch the athlete and their data.
     curr_athlete = client.get_athlete()
     # print("Athlete name is ", curr_athlete.firstname, curr_athlete.lastname,
     #      "\nGender: ", curr_athlete.sex, "\nCity: ",
     #      curr_athlete.city, ", ", curr_athlete.country)
     allShoes = curr_athlete.shoes
 
+
+# Displays some basic info for the equipment.
     # data = []
     # dataColumns = ['id', 'name', 'distance', 'primary', 'brand_name', 'model_name', 'description', 'resource_state']
     # for equipment in allShoes:
@@ -102,6 +118,7 @@ def get_all_activities():
 
     csvPath = pathlib.Path(__file__).parent / "/data/localStrava.csv"
 
+# Check if there's already a local csv with all the relevant data in it.
     if exists(csvPath):
         print("Local data file found.")
         activityDF = pd.read_csv(csvPath, sep=';', encoding='utf-8')
@@ -119,6 +136,7 @@ def get_all_activities():
     else:
         latestActivity = "2010-01-01T00:00:00Z"
 
+# If there are too few activities in the loaded data, it fetches some new activities.
     if activityDF.shape[0] < numToRetrieve:
         print("Retrieving activities since: ", latestActivity)
         activities = client.get_activities(after=latestActivity, limit=numToRetrieve)
